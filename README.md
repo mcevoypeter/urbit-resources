@@ -8,6 +8,7 @@
  1989 | [Tcl: An Embeddable Command Language](papers/tcl-usenix-1989-ousterhout.pdf)                                             | Ousterhout
  1991 | [The Design and Implementation of a Log-Structured File System](papers/lfs-1991-rosenblum-ousterhout.pdf)                | Rosenblum & Ousterhout
  1996 | [An On-the-fly Bytecode Compiler for Tcl](papers/tcl-bytecode-compiler-1996-lewis.pdf)                                   | Lewis
+ 2011 | [Kafka: a Distributed Messaging System for Log Processing](papers/kafka-2011-kreps-et-al.pdf)                            | Kreps et al
  2014 | [In Search of an Understandable Consensus Algorithm (Extended Version)](papers/raft-extended-2014-ongaro-ousterhout.pdf) | Ongaro & Ousterhout
  2016 | [Sulong - Execution of LLVM-Based Languages on the JVM](papers/sulong-2016-rigger-et-al.pdf)                             | Rigger et al
  2016 | [Urbit: A Solid-State Interpreter](papers/urbit-2016-yarvin-et-al.pdf)                                                   | Yarvin et al
