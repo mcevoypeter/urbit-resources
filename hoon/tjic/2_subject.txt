@@ -1,0 +1,140 @@
+2: Subject Oriented Programming
+-------------------------------
+
+
+Curtis' essays talk about Hoon being a "subject oriented language".
+
+Your eyes see those words, you nod, you move on.
+
+...and yet, you just skipped over something really damned important,
+that is not explained anywhere in the Hoon documents.  ...and if you
+Google, Wikipedia and other sources are terrible at explaining what
+the concept is.
+
+So, let's dive in.
+
+When you write a C program, or a Ruby program, or a Lisp program,
+there is tons of information available to your code.  You can call a
+function to get the current time.  You can inspect environment
+variables (in Ruby you can find the directory that your program is
+running in with ENV[CWD]).  On Windows you can inspect registry
+settings.  You can call library functions.  Your code can look up the
+values of global variables.  It can use the values of local variables.
+
+When you sit down and think about it, you realize that
+
+(a) there are quite a few sources of "information" and "stuff" that a
+given line of code can reference.
+
+(b) this bundle is ill-defined.  I bet until you read the above
+paragraph you never actually thought of these disparate items as all
+being "stuff my code can reference".
+
+(c) this bundle is DISPARATE.  It's not all of the same type.
+
+Urbit and Hoon do something very very clever.  The put ALL of this
+crap into one bundle.  In doing so, they force you to conceptualize it
+as related stuff...and it is!
+
+Now, anyone want to guess what data format Hoon uses to bundle all of
+this stuff together?
+
+Repeat after me:
+
+	Everything is a binary tree in Hoon.
+
+	EVERYTHING.
+
+
+So, at any given point in your code, your instructions will have an
+environment - global variables, local variables, functions that can be
+called, etc. - and that computational environment is a binary tree
+called "the subject".
+
+Now, this leads us into a bit of magic, and a concept that will be new
+for most C and Ruby programmers: if the 'subject' is the complete
+package of information available to some computation, and the subject
+is a binary tree...can we not modify a subject, alter it, create
+multiple subjects and use one at certain times, and other times?
+
+Yes, we can.  And this is a core conceptual tool for reading and
+writing Hoon!
+
+Let's use some C-line and Ruby-like pseudo-code, to talk about Hoon
+concepts.
+
+If this is our program (note: NOT ACTUAL HOON!):
+
+   {
+	 print a + b
+   }
+
+the code fails, because neither a nor b are defined.
+
+
+Now let's look at this:
+
+   subject =
+   {
+     a = 10
+     b = 20
+   }
+  
+  code = 
+  {
+     print a + b
+  }
+
+
+  with_subject_execute_code(subject, code)
+
+This is how Hoon works!
+
+Now, let's get a bit trickier,
+
+
+   subject =
+   {
+     a = 10
+     b = 20
+   }
+  
+  code = 
+  {
+	 :: first line of output
+     print a + b
+
+	 :: second line of output
+	 my_sub = { a = 20; b = 50 }
+	 my_code = { print (2 * a) + b }
+     with_subject_execute_code(my_sub, my_code)
+  }
+
+  with_subject_execute_code(subject, code)
+
+
+Work through this pseudocode in your head and tell me what it outputs.
+
+Now let's get trickier yet!
+
+
+
+   subject =
+   {
+     a = 10
+     b = 20
+   }
+  
+  code = 
+  {
+	 my_sub = subject.merge( { c = 10 } )
+	 my_code = { print (2 * b) + c }
+     with_subject_execute_code(my_sub, my_code)
+  }
+
+  with_subject_execute_code(subject, code)
+
+What gets printed out?
+
+As you can see, subjects are first class concepts / objects, and
+modifying a subject is a key part of Hoon coding style.

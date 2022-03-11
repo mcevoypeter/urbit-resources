@@ -1,0 +1,466 @@
+4: More on Trees
+=============
+
+Motivation
+----------
+
+Chapter 4 is long past the point where a normal guide would give you a
+"hello world" program.  Hello world programs are great; they give you
+a lot of instinctive feel for how a programming language works.  I'm a
+big fan.
+
+The existing Hoon docs eschew helloworld for the first couple
+chapters, and I originally thought that this was a mistake - it's good
+to let students get their hands dirty, and start playing!
+
+In the case of Hoon, though, there are enough things that are weird
+(is "non standard" a politer term?)  about the language that I've
+reluctantly come to agree that helloworld should be delayed a bit.
+
+So we're going to talk about trees a bit more - but let me explain the
+motivation, which hopefully will make the wait for our first true
+helloworld a bit more tolerable.
+
+Since EVERYTHING IN HOON IS A TREE, all of our code and all our data
+is stored in tree form.
+
+Where a C programmer might reference a variable 'a', or where a
+windows programmer might query a registry setting with
+
+        RegQueryValueExW(hKey, strValueName.c_str() ... )
+
+Hoon programmers will reference data (note: not variables) that they wish
+to perform computations on from trees.
+
+Where a Ruby programmer might load a gem and then invoke a function
+that lives in the namespace of said gem, a Hoon programmer will
+specify the library function that they want to execute by referencing
+its location in a tree.
+
+So good knowledge of how to reference things in trees is crucial; we
+can't write the actual Hoon equivalent of
+
+      void main()
+      {
+         string = "hello world";
+         print(string);
+      }
+
+without first discussing the how to find and reference both the data
+with the name 'string', and the function with the name 'print'.
+
+Some Quick Backfilling
+----------------------
+
+So, with that motivation made clear, let's talk about how to reference
+things in trees.
+
+...but first, let's take a quick moment to back fill a few small
+things: 1) terminology of trees 2) a brief discussion of integers in
+trees
+
+Re terminology, we need to define three vocabulary terms:
+
+* cells
+* atoms
+* nouns
+
+Here is a Hoon tree
+
+            .
+          /    \
+
+         .       .
+
+      /    \   /    \
+
+      3    12  1      5
+
+
+Every leafnode in that tree (3, 12, 1, 5) is an "atom".  It's just a
+number. It doesn't have any children.
+
+Every non-leaf node is a "cell".
+
+Atoms and cells are the two types of "nouns".
+
+Re integers: in all the examples to date, I've shown trees full of
+integers.  Never strings, never characters, never emojis or
+timestamps.
+
+If it true that in Hoon trees can only hold integers?
+
+Let me ask a counter-question: in your x86 CPU, what values can the
+CPU registers hold?  The answer is "The CPU can only hold
+integers...but higher level code interprets those integers as either
+ints, or RGB colors, or English letters, or unicode emojis, or
+whatever."
+
+So it is in Hoon.  Trees can hold integers, and nothing else.  Later
+(much later!) we will discuss how it is that sometimes an integer
+should be interpretted as an RGB color, but other times a similar
+integer should be interpretted as network address, or what have you.
+The branch of mathematics dealing with such things is called "type
+theory", and computer science types can fight over the strange
+religious dogmas of various flavors of it til the cows come home.  I
+don't much care about type theory, and won't get dragged into it
+prematurely.
+
+So, right now, remember that everything in a tree is an integer (or,
+in Hoon terms, "all of the atoms in a hoon are integers").
+
+Further, in Hoon all ints are bigints, meaning that the size is
+effectively unbounded.  Values are not 8 bit wide integers, nor 16 bit
+wide integers, nor a 32 bit wide.  They are unbounded.  Take a noun
+that has a value that occupies a full 32 bits, and multiple it by
+2...and you do not get an error, or an overflow, or anything.  You
+just have another noun that accurately represents the new number.
+
+Three ways to specify a location in a tree
+------------------------------------------
+
+Hoon supports three ways to specify a location in a tree:
+
+1) direct address
+2) left/right navigation
+3) by name
+
+1: Direct Address
+-----------------
+
+Let's look at direct addressing first.
+
+In a C style array, each element in the array has a direct address.
+The zeroeth element has address 0, the next element has address 1, and
+so on.
+
+In this piece of C code
+
+   char * dog_name = "Strider";
+
+the address
+
+    dog_name[0]
+
+has value 'S', and so forth.
+
+Note that the addressing scheme is the same for EVERY C array,
+regardless of what data the array holds.
+
+Hoon trees also have direct addresses.
+
+The root cell is address 1.
+
+The left child of any cell has an address 2 x the address of the cell.
+So given that the root cell has address 1, we know the root cell's
+left child has address 2.
+
+The right child of any cell has address 2 x  the address of the cell + 1.
+So given that the root cell has address 1, we know the root cell's
+right child has address 3.
+
+Here is a Hoon tree
+
+            .
+          /    \
+
+         .       .
+
+      /    \   /    \
+
+      3    12  1      5
+
+
+Here is the same tree annoted with the addresses
+
+            .  {1}
+          /    \
+
+         . {2}   . {3}
+
+      /    \   /    \
+
+      3    12  1      5
+    {4}   {5}  {6}    {7}
+
+Note that these annotations I've added are purely definitional.  They
+are not meta-data associated with the tree data structure.  (For those
+who are not wure what I mean by "meta-data associated with the tree
+data structure", think of HTML, which has full blown HTML elements
+nested inside each other...but also "decorates" elements such as div
+or H1 with attributes like "style" or "id" or "class").
+
+To restate that another way: you can type in a tree by hand to the
+dojo interpretter this way
+
+     [ [3 12] [1 5]]
+
+and get exactly the above tree, and if you then inspect it using the
+tools we're about to present, the interpretted knows - without being
+told - that location 4 contains the number 3, and location 5 contains
+the number 12.  These addresses are absolute and constant and can not
+be modified - you can't tell Hoon that in this particular tree you
+want address 3 to refer to something else.
+
+Hereafter, the "location" or "address" will be referred to by the
+proper Hoon term: the "axis".
+
+Let's do some exercises.
+
+Re this tree
+
+
+              .
+            /   \
+           3     .
+                 / \
+                1    .
+                    / \
+                   5   .
+                      / \
+                     22  99
+
+Q: what is the axis of the root, up at the top?
+A: 1
+
+Q: What is the axis of the left hand child of the root, which holds a
+'3' ?
+
+A: the axis of left hand child of cell n is  always 2 n. In this case,
+since the root is axis 1, the left hand child is axis 2.
+
+Q: what is the address of '3's sibling, the cell to the right of it?
+
+A: the axis of right hand child of cell n is  always 2 n + 1. In this case,
+since the root is axis 1, the left hand child is axis (2 x 1) + 1, or
+3.
+
+Q: what is the axis of the leaf node holding '1' ?
+
+A: starting at the root, we have axis 1. We go to the right from
+there, so 2n + 1 is 3.  Now we need to do down and to the left, and
+moves ot the left are 2n, so 2n where n = 3 is 6.  Thus, the axis of
+the "1" atom is 6.
+
+Note that when we do an axis lookup on a hoon, we get one of three
+results:
+
+* a leaf node (an atom)
+* a subtree (a cell / the root of a hoon)
+* an error
+
+Q: What's axis 2 of the above tree?
+A: an atom, 3
+
+Q: what's axis 15 of the above tree?
+A: a cell / a subtree
+
+               .
+              / \
+             22  99
+     
+
+Q: what's axis 999 of the above tree?
+A: that's an error, and urbit crashes.
+
+(yes, CRASHES.  Urbit does not throw catchable errors.  Any error
+results in a crash. This is a design feature.
+
+Again: I explain, I do not defend.)
+
+So, we've explained that urbit addresses locations in a tree by their
+'axis'.  What's the actual syntax of this?
+
+A plus sign, followed by the integer of the axis.
+
+2: path from root
+-----------------
+
+The second way of navigating trees is descending from the top,
+choosing at each step "left (and down)", "right (and down)", or "this
+/ no-op".
+
+Again, re the tree
+
+              .
+            /   \
+           3     .
+                 / \
+                1    .
+                    / \
+                   5   .
+                      / \
+                     22  99
+
+
+let's navigate from the top.  If we go right / right / left, we get
+the atom 5.
+
+If we go left, we get the atom 3.
+
+If we go right / right, the get the subtree
+
+                     .
+                    / \
+                   5   .
+                      / \
+                     22  99
+
+
+The syntax of this is a bit odd.
+
+The operation "no-op" is ".".
+
+The operation "go left" is expressed with either with "<" or "-".  The two
+are exactly identical, but the style guidelines suggest that you
+alternate them for readability.  So if you wanted to go left three
+times in a row, you'd write "<-<".
+
+The operation "go right" is expressed with either with ">" or "+".  The two
+are exactly identical, but the style guidelines suggest that you
+alternate them for readability.  So if you wanted to go right three
+times in a row, you'd write ">+>".
+
+Because "no-op" does nothing, you can interleave it wherever you
+want.  ">+>" is the same as ">.+.>".  The interpretter has opinions on
+well formatted code, and may not allow you to, say, chain four noops
+in a row, but it is technically valid.
+
+3: by name
+----------
+
+If we were writing a Hoon program to deal with health records, we
+might wish to use trees that hold height (feet), height (inches), and
+weight (pounds).
+
+One can imagine a record that looks like this:
+
+              .
+            /   \
+         205      .
+                 / \
+                5   11
+
+where weight is stored in the left-most position (axis 2, or path
+"<"), whole feet is stored in the next position (axis 6, or path
+"><"), and inches are stored in the last position (axis 7, or path
+">>").
+
+We could write code that operated on such a record by using either
+axises or tree descent paths ... but the code would be a bit ugly.
+Imagine computing a body mass index
+
+        BMI = mass / height^2
+
+with code that looked like this
+
+     < / ( (12 * ><) +  >> ) ^ 2
+
+It would be much nicer to write
+
+   weight / ((12 * feet) + inches) ^ 2
+
+...but how can we associate names with a tree?  I've said repeatedly
+that while HTML trees can have attributes tagged on each node, like
+this:
+
+    <html>
+        <div id="weight"> 205</div>
+        <div id="feet">     5</div>     
+        <div id="inches">  11</div>
+    </html>
+
+Hoon trees do not support any metadata.
+
+We're boned, right?
+
+Well, there's a workaround.
+
+Our hoon code will be executed by a Hoon interpretter, and that
+interpretter is written largely in Hoon ... since Hoon is a full
+powered programming language, we can do tricky things, like pretend
+that we have metadata.
+
+As an existence proof (not a statement on how the hoon interpretter
+actually works), imagine our raw data again:
+
+              .
+            /   \
+         205      .
+                 / \
+                5   11
+
+and then imagine the following tree alongside it (we've dealt with
+pseudo-code before, now we're dealing with pseudo-data; please ignore
+the fact that I'm hand-waving strings into existence):
+
+               .
+             /    \
+            /      \			
+           .        .
+          /  \     /   \
+    "weight" 2    .        .
+                 /\     /      \
+                /  \   /        \
+           "feet"  6  "inches"   7
+
+Note that this second tree contains three 2-tuples, e.g. { "weight" ,
+2  }.  Note that the first item in each tuple is a human-readable
+string, and the second item is an integer...that describes a location
+in the FIRST TREE !
+
+One can easily imagine code that takes the human readable string
+"feet", searches for it in the second tree, finds it, looks up the
+sibling of that atom, finds an integer, then uses that integer to
+navigate in the first tree to axis (location) 6, and finds the integer
+5 (representing 5 feet).
+
+The hoon interpretter does something like this.
+
+Again, you can not ACTUALLY tagging a tree with metadata ... but the hoon
+interpretter will act as if you can, in some limited ways.
+Specifically, it will let you associate names with certain nodes.
+
+We can thus create, within the interpretter, something that APPEARS to
+look like this:
+
+              .
+            /   \
+    weight=205    .
+                 / \
+            feet=5   inches=11
+
+
+The labels are called, in Hoon terminology, "faces".
+
+We recall from the earlier discussion of tree syntax that we express
+the unnamed version of this tree
+
+	[205 [5 11]]
+
+or, shorter, as
+
+	[205 5 11]
+
+The Hoon syntax to create a tree with faces is this:
+
+    [weight=205 feet=5 inches=11]
+
+Once we're writing code, the syntax to 
+
+
+Recap
+-----
+
+* we need to learn tree navigation so that we can reference both data and code
+* vocabulary:
+    * raw integers are "atoms".  The mnemonic is that they are indivisible.
+    * nodes in a tree are "cells"
+    * atoms and cells are the two types of "nouns"
+* Every atom is, at heart, an integer (specifically a bigint).
+* There are three ways to specify a location in a tree:
+    * by axis
+    * by path
+    * by name (or "face")
+
+* 

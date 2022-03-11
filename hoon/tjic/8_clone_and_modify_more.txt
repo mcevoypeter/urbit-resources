@@ -1,0 +1,108 @@
+8: More Clone and modify
+---------------------
+
+In the last chapter we used =+ ("tislus") to create a new subject by
+cloning the old subject, pushing it down, and pinning a new value.
+
+
+Very similar is =. ("tisdot"), which clones the old subject, modifies
+one faced value, and then executes some code in that new subject.
+
+The arguments are:
+    * the face
+	* the new value for that face
+	* the code to be executed in the new subject
+
+An example :
+
+   =+(a=10 .)  :: take the current subject, pin a=10, view the subject
+
+   =+(a=10 =.(a 6 .)) :: view the subject, showing a=6 overwrote a=10
+
+Note that it is an error to attempt to modify a face that does not
+currently exist in the subject, e.g.
+
+   =+(a=10 =.(z 6 .))
+
+You can also =: ("tiscol") to modify multiple values at once:
+
+   =+(a=10 =+(b=10 .))    :: pin two values, 'a' and 'b'
+
+   =+(a=10 =+(b=10 =:(a 1, b 2 .)))    :: pin two values, 'a' and 'b',
+   		   		   		   	   		   :: then modify them
+
+Two things to note about the syntax here:
+
+* tiscol is the first rune we've looked at that takes a variable
+  number of arguments.  We can modify 1, 2, 3, or any number of faces.
+
+* commas are used to separate the pairs of faces and values.
+
+
+Now another 'tis' rune, this time =^ ("tisket").
+
+Tisket takes four arguments. Like every rune we've seen so far, the
+final argument is the code to be run in the newly constructued
+subject.  The first three arguments are used to clone-and-modify the
+existing subject, but in a strange way.
+
+Tisket modifies the cloned subject in two ways simultaneously:
+
+1) it pushes down the existing subject to axis 3, and pins a new value
+at axis 2, like =+ ("tislus").
+
+2) it modifies an existing face to hold a new value, like =. ("tisdot").
+
+
+The first three arguments are:
+    * a face designator - that we'll use to name the new value pinned at axis 2
+	* another face designator - to find the face that we'll modify 
+	* some hoon code that generates a cell.  The value in the head of
+	the cell (+2) will be used for the first half of the modification,
+	and the value in the tail of the cell (+3) will be used for the
+	second half of the modification.
+
+And, again, the fourth argument is the code to be evaluated in the
+newly created subject.
+
+Here's a simple example. First, we'll create a very simple subject
+that just holds two values, labelled with faces 'a' and 'b'.
+
+    =>([a=10 b=20] . )
+
+             .
+            / \
+         a=10  b=20     
+
+
+Now, in the context of that subject, let's evaluate =^ ("tisket").
+
+For the first argument, we'll pick a new face, 'z'.
+
+For the second argument, we'll pick a face already present in the
+subject, 'b'.
+
+For the third argument of tisket we'll supply the trivial [1 2] which
+returns just [1 2], obviously.
+
+Let's see what we get:
+
+    =>([a=10 b=20] =^(z b [1 2] .))
+
+                .
+               /  \
+             z=1   .
+                  / \
+                a=10 b=2
+
+
+Note that we evaluated the third argument [1 2], got [1 2], then broke
+that into two values.  We used the head, 1, with the face specified in
+argument 1 ("z"), to push down the whole subject to +3 and pin a new
+value at +2.
+
+Then we used the tail of [1 2], i.e. 2, to overwrite the value with
+the face 'b'.
+
+
+

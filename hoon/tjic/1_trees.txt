@@ -1,0 +1,182 @@
+Intro to Trees
+
+There is only one data structure in Hoon: the binary tree.
+
+Everything is a binary tree in Hoon.
+
+EVERYTHING.
+
+Hoon code itself is a binary tree! ...but don't worry about that yet.
+
+Let's have a quick  refresher on binary trees, a general purpose data
+structure that is used all over, not just in Hoon.
+
+A binary tree consists of nodes, starting with the root node.  In the
+general case, each node (a) contains a value, (b) has 0, 1, or 2
+children.  Or, rather, every node has pointers to 2 children, but
+either of these pointers can be NULL / empty / whatever.  There are no
+cycles (i.e. no loops).
+
+More information:
+
+    https://en.wikipedia.org/wiki/Binary_tree
+
+
+You have certainly dealt with trees before.  HTML, for example, is a
+tree (although not a binary tree).  E.g.
+
+     <html>
+        <h1>title</h1>
+        <div id=a>this <span>is the first div</span></div>
+        <div id=b>that</div>
+        <div id=c>the other</div>
+     </html>
+
+is a root node ( html ) with four children (h1, div.a, div.b, div.c).
+The second child (div.a) has a lot going on: an id ('a'), content
+("this"), and a child ("span").
+
+Hoon has a MUCH simpler structure.
+
+First, it's a binary tree: every node can have 0, 1, or 2 children.
+
+Second, there are no attributes (like HTML "names" or "ids").
+
+Third, a node either has content, or has children, but never both.
+
+Also, we call nodes "cells", and we call trees "hoons".  Yes, the name
+of the core data structure is the same as the name of the language,
+except the word for the data structure has a lowe case 'h', while the
+language name has an upper case 'H'.  I do not defend this; I merely
+report on it.
+
+Onward.
+
+Let's look at a Hoon style binary simple tree:
+
+
+          3
+
+
+
+This is a tree with one cell (the root) which holds the value 3, no left child, and no
+right child.
+
+Here's a Hoon tree with three cells:
+
+
+            .
+          /    \
+
+         3      1
+
+
+Here's a Hoon tree with seven cells:
+
+
+            .
+          /    \
+
+         .       .
+
+      /    \   /    \
+
+      3    12  1      5
+
+
+These ASCII art diagrams are tricky, and there's a much more compact
+notation, using square brackets.  The above tree can be expressed
+thusly:
+
+[[3 12] [1 5]]
+
+
+Trees need not be balanced; this is a legitimate tree:
+
+            .
+          /    \
+         3       .
+               /    \
+              1      5
+
+
+This tree is expressed
+
+     [3 [1 5]]
+
+A very common use of trees in Hoon is a very very unbalanced
+right-heavy tree, like this:
+
+              .
+            /   \
+           3     .
+                 / \
+                1    .
+                    / \
+                   5   .
+                      / \
+                     22  99
+
+
+All linear structures are implimented in trees this way.  Where you
+would use an array in C or Ruby, you'll use a tree in this manner in
+Hoon.  You should simultaneously think of such a usage as "a list",
+but also remember the underlying implementation.
+
+This is expressed on one line as
+
+	 [ 3 [1 [5 [22 99]]]]
+
+Because this is a very common usage model, though, there is an
+alternate expression syntax:
+
+	  [3 1 5 22 99]
+
+Your brain is going to look at this and think "that's a tree with a
+single root cell, and it has five children cells".  Yes, that's what the
+syntax seems to imply.
+
+No, that's not what it means.
+
+I know that this is kind of painful, but you have to accept that the
+above syntax means the diagram above, NOT a root with five children.
+
+When you realize that that unbalanced right-heavy tree is USED in the
+same way that an array is, the syntax becomes a bit less painful.
+
+The interpretter (dojo) accepts both syntaxes, but only emits the
+compact one.
+
+So, let's recap:
+
+* everything in Hoon is a binary tree  ... EVERYTHING !
+* we also call binary trees "hoons", with a lower case 'h'.
+* binary trees are made up of cells
+* a cell either (a) holds a value and has zero children, or (b) does
+  	NOT hold a value and has 1 or 2 children.
+* cells do not have HTML- or XML- style attributes associated with them
+   (this is kind of the truth and kind of a white lie; I'll explain
+   more later)
+
+
+Your homework assignment:
+
+* get urbit installed on your PC following the instructions here
+  	  https://urbit.org/docs/learn/arvo/hoon/getting-started/
+
+* boot into a comet.  Note that you must do this in a basic terminal;
+  	  it will NOT work inside an emacs shell.
+	  
+* read the official explanation of nouns, cells, and atoms here
+  	   https://urbit.org/docs/learn/arvo/hoon/nouns/
+
+* in your urbit, use dojo (the interpretter) and enter some	hoons:
+
+  	 [[1 2] [3 4]]
+	 [10 20 30 40 50]
+
+etc.
+
+Note that the dojo interpretter is very opinionated, and will enforce
+one space between values.  I do not defend this, I merely report it.
+

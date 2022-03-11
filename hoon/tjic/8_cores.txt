@@ -1,0 +1,190 @@
+
+Cores and arms
+--------------
+
+A "core" is a Hoon construct that is roughly analagous to a class, or
+an object, but also has some similarities to a namespace and to a "closure".
+
+Inside a core there exist one or more "arms", which are roughly
+analagous to "functions" or "methods" or "attributes".
+
+We will talk about cores and arms in four distinct approaches:
+
+* concept / overview
+* how they're formed / lexically, what they look like
+* how they're implemented
+* how they're used / what happens (in detail) when they're used
+
+Cores and arms 1: Concept overview
+----------------------------------
+
+Let me lie to you briefly.
+
+* Arms are functions (in the mathematician's sense).  They return some
+  result based on the arguments ("sample") passed in.
+
+* Cores are just a namespace that an arm lives in.
+
+* Cores don't really matter; only arms matter.
+
+The above is 90% correct.  If you get confused below, return to those
+three points, and only then slowly add back in the complications that
+follow.
+
+Complication #1:  Arms aren't actually limited to just the arguments
+passed in; they can also use the state of the world ("the subject")
+that existed at the place and time at which they were defined.
+
+Let's dive into this, using our favorite tool, psuedo-code.
+
+We can imagine a programming language that works like this:
+
+
+	(setq y 10)	   	 		  	   		:: y is a global variable
+
+	(setq f     (lambda (x) (+ y x)))   :: lambda creates an anonymous
+										:: function which takes argument
+										:: 'x' and multiplies it by the
+										:: the value of global
+										:: variable 'y'
+										::
+										:: we save this anonymous function
+										:: into variable 'f'
+
+	(funccall f 2)						:: invoke the function f
+	=> 12	  							:: global y + 2 => 12
+
+	(setq y 20)							:: reset global y to 20
+	(setq g     (lambda (x) (* y x)))	:: create a new function
+	(funccall g 2)			   	 		:: global y + 2 => 22
+	=> 22
+
+	(funccall f 2)						:: f references global y
+	=> 22	  							:: so 20 + 2 => 22
+
+
+we could also imagine a different language that works like this.
+Please read carefully (ESPECIALLY the comments); there are some subtle
+but VERY important differences:
+
+
+	(setq y 10)	   	 		  	   		:: y is a global variable
+
+	(setq f     (lambda (x) (+ y x)))   :: lambda creates an anonymous
+										:: function which snapshots
+										:: the CURRENT VALUE of y,
+										:: when the lambda is built, 
+										:: and later multiplies it by the
+										:: argument 'x'
+
+	(funccall f 2)						:: invoke the function f
+	=> 12	  							:: snapshotted y + 2 => 12
+
+	(setq y 20)							:: set y to 20
+	(setq g     (lambda (x) (* y x)))	:: create a new function with
+		  					   	 		:: snapshotted y=20
+	(funccall g 2)			   	 		:: snapshotted y + 2 => 22
+	=> 22
+
+	(funccall f 2)						:: f references snapshotted y
+	=> 12	  							:: so 10 + 2 => 22
+
+
+Most programming languages you have used probably don't have lambdas
+(or they do, but you haven't used them), and many languages that do
+have lambdas work like the first example. 
+
+Hoon works like the second example.
+
+Let's repeat the point:
+
+	arms aren't actually limited to just the arguments passed in; they can
+	also use the state of the world ("the subject") that existed at the
+	place and time at which they were defined.
+
+
+This is kind of weird, but gives new programming paradigms.
+
+One example, in a Ruby-like pseudo-code:
+
+	person_list = [
+				  { :name => "Mike",   :age => 57}, 
+  				  { :name => "Darcy",  :age => 36},
+				  { :name => "Javier", :age => 53},
+				  ...
+				  ]
+
+	field = :age
+
+	core = form_core(
+		   	  form_arm( :name => print_all(field),
+			  			:code => { printf person_list.head.field(field)
+							  	   
+					}
+					   )
+
+
+	
+
+
+Complication #2: The way that complication #1 is implemented is with a
+datastructure.  This datastructure is called a "core", and it has
+exacty the same extent as the namespace.
+
+
+
+
+
+Cores and arms 2: how they're formed
+------------------------------------
+
+There are nine distinct runes that will create a core, each with a
+slightly different flavor from the others.  For now we'll concentrate
+on just one type, and come back to the others later.
+
+Here's an example of forming a core:
+
+
+topics
+------
+* search path
+* sample
+* context
+
+:: show that nested cores have different subjects in axis 7
+
+|=  a=@ud
+  ~&  "outer new"
+    ?:  =(a 0)
+      =/  xxx  999
+        .
+    %-
+      |=  b=@ud
+        ~&  "inner new"
+          =/  xxx  111
+            .
+    10
+
+
+:: show how ^$ works to find outer buc
+::
+
+|=  a=@ud
+  ~&  "outer"
+    ?:  =(a 0)
+      0
+    %-
+      |=  b=@ud
+        ~&  "inner"
+          ^$(a 0)
+    10
+
+
+
+
+N.B. debugging printfs don't fire on subsequent invocation with same arguments ?
+
+TO DO
+-----
+
+in the C example of "not a function", add an output side effect

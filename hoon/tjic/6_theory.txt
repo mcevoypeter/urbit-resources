@@ -1,0 +1,597 @@
+6: Theory and Syntax
+---------------------
+
+To date we've talked about data structures, and about snippets of code run from the dojo prompt.
+
+Today we're going to discuss giving names to blocks of code so that we can reuse it later, or call it by name.
+
+First, let's back up and consolidate a few things we've already talked about, implicitly but not explicitly:
+
+* definition of the word "function"
+* runes
+* Hoon syntax
+
+definition of the word 'function'
+---------------------------------
+
+A typical programmer would consider this C code a function
+
+  // global variable;
+  int global = 12;
+
+  // accept one argument from caller and add
+  // a keyboard input plus stored state from last time
+  int get_wacky_input(int rando)
+  {
+	   static int old_data = 0;
+       int user_input;
+	   old_data = user_input = getchar();
+	   return(rando + user_input + old_data + global);
+  }
+
+A mathematician or a computer scientist with a math heavy background would not.
+
+There are two different definitions of the term "function" floating
+around, and they are not crisply either identical or disjoint (meaning
+SOME programmer "functions" are mathematicial functions, but others
+are not) and this causes a world of confusion.
+
+Most programmers define a function as "a block of code which may or
+may not accept arguments, may or may not return a value, may or may
+not alter global state, and which may or may not have a name".
+
+As this book is written for working engineers, you are certainly
+already familiar with this definition.
+
+Mathematicians define a function as "a [ deterministic ] mapping from
+a range of inputs to a range of outputs."
+
+An example is: on the set of inputs (the "domain") made up of the
+integers 1 through 10, the output is the input plus 2 (thus giving the
+"range" of 3 through 12).
+
+Note a few things:
+
+* it is nonsensical / an error to try to invoke this on the value 3.14 or 20
+* the output depends ONLY on the input, not on "user input", not on stored state, not on other things in the world
+* the computation does not depend on the word size of the underlying hardware, the precision of the floating point implementation, or any other engineering detail
+
+So, how does the C function above fail to meet the mathematician's
+definition of "function" ?  Let me count the ways:
+
+* its output depends on a global variable - something not passed into the function
+* its output depends on user input
+* its output depends on stored state.  (When you type 2 + 2 on your calculator (or 2 2 + on your RPN calculator!) the result never depends on what you last evaluated)
+* the result can overflow the size of an integer, and in C, the value of a calculation that overflows a signed integer IS NOT DEFINED.
+
+Hoon, needless to say, was created by a computer scientist with a math
+heavy background, and so the use of the word "function" in all Hoon
+docs and in the Hoon programming community is distinct from the use of
+most programmers!
+
+It is tempting, as we talk about "cores" and "gates" and "arms" to map
+these concepts to C or Ruby "functions", but be very careful in doing
+so ... and consider doing that mapping briefly, but then letting it go
+and trying to use the new Hoon words exclusively in your thinking.
+
+Oh, and final note: once you internalize the mathematician's
+definition of a "a function", you'll start to perceive a bit more
+meaning in the urbit slogan / definition "urbit: an operating
+function".  We'll circle back to that in more depth in the future, but
+chew on the phrase and its implications a bit, when you get bored.
+
+Runes
+-----
+
+We've been playing with things like this
+
+	=+(^=(a 10) +1)
+
+which contains two runes (=+ and ^=) without really defining what a rune is.
+
+(As a quick aside / refresher: recall that the above expression is pronounced "tislus of 'kettis of a 10' and +1"
+and
+   * apply a face 'a' to the integer 10
+   * clone-and-modify the current subject by pinning that new a=10 to the top of it
+   * on that newly created subject, look up the +1 axis (base) of the subject tree and return it
+
+)
+
+So let's have a formal definition: a rune is one of a finite,
+pre-determined, built-in set of two characters ("glyphs") that invoke
+a basic operation in the Hoon language.  They are "spelled" with
+characters from a limited set of non-alphanumerics.  Higher level
+operations (e.g. in the Hoon library and the Arvo operating system)
+are built up out of the runes, and nothing else.
+
+Runes are grouped together in families, organized by the first
+character in the rune.  Thus all runes that start with "?" ("wut") are
+related to conditionals (e.g. if, then, else...), all runes that start
+with "|" ("bar") are related to cores, and so forth.
+
+The second character in each rune has no fixed meaning.  The "_"
+("cab") in "|_" ("barcab") is unrelated to the "_"("cab") in ":_"
+("colcab").
+
+The list of pronunciations and glyph families of the runes is as follows:
+
+	https://urbit.org/docs/reference/hoon-expressions/rune/
+
+	. dot (Nock) - Runes used for carrying out Nock operations in Hoon.
+
+	! zap (wild) - Wildcard category. Expressions that don't fit anywhere else go here.
+
+	= tis (Subject Modification) - Runes used to modify the subject.
+
+	? wut (Conditionals) - Runes used for branching on conditionals.
+
+	| bar (Cores) - Runes used to produce cores.
+
+	+ lus (Arms) - Runes used to define arms in a core.
+
+	: col (Cells) - Runes used to produce cells, which are pairs of nouns.
+
+	% cen (Calls) - Runes used for making function calls in Hoon.
+
+	^ ket (Casts) - Runes that let us adjust types without violating type constraints.
+
+	$ bus (Structures) - Runes used for defining custom types.
+
+	; mic (Make) - Miscellaneous useful macros.
+
+	~ sig (Hints) - Runes that use Nock 11 to pass non-semantic info to the interpreter.
+
+	--, == (Terminators) - Runes used to terminate expressions.
+
+Don't worry too much about this now (certainly don't waste effort
+memorizing it).  As this series goes on, we'll circle around to each
+family of runes multiple times.
+
+
+Hoon syntax
+-----------
+
+We've been exposed to Hoon syntax, as in the example
+
+	=+(^=(record [pounds=205 feet=5 inches=10])   feet.record)))
+
+but we haven't actually defined the syntax.
+
+So let's do so now (or, at least, the subset of it that we've already been playing with).
+
+
+Hoon files include:
+
+* whitespace - one or more space ("ace") characters. Tabs are not whitespace. Tabs are, in fact, illegal, and will cause a syntax error - EVEN IN COMMENTS.  I do not defend this; I merely report on it.
+* a comment - begins with "::" ("colcol") and extends to the end of the line
+
+A valid Hoon expression is one of:
+
+* a face - a human readable string that starts with a lower case letter, then is followed by a squence of lower case letters, the 10 digits, and the dash character ("hep")
+* an atom - integer values, although later we'll talk on how atoms can have types assigned to them), optionally named with a face using <face>=<atom> syntax
+* a cell, also called a "hoon" - a pair of nouns, where each noun is either an atom or a cell, optionally named with a face using <face>=<atom> syntax
+* a wing primitive, which is either an axis reference, a face reference, or a left/right descent operators
+* a wing expression, which is a chain of wing primitives read from right to left, with the note that the zero or more instances of the skip operator "^" ("ket") can be stacked before a face name.
+* a rune function call expressions, which is a rune, followed by an open paren
+  ("pal"), 1 or more arguments (the exact number is specified by the
+  rune) , and a close parent ("par"), where the arguments are hoon
+  expressions (the exact subtype of hoon expression dictated by the
+  rune).
+
+Valid comments include
+   :: fix me
+and
+   :: I have no idea how this works
+and
+   :: input is a list of 1+ blits (list defined in hoon.hoon:302, blit in zuse.hoon:662)
+
+Valid faces include "a", "b", "this", and "keb-a-bab".
+
+Valid atoms included 0, 1, 290.  Valid faced atoms include a=0, b=1, and keb-a-bab=290.
+
+Valid cells include [2 3] (a cell of two atoms), [[1 2] [3 4]] (a cell
+of two cells, each of them composed of two atoms), and [1 [2 [3 [4 [5
+[6 [7 8]]]]]]].  Valid cells with faces applied include a=[b=9 8],
+c=[d=[e=1 f=2] [3 4]].
+
+Valid wing primitives include +2 (an axis), "keb-a-bab" (a face), and <, -, >, +,  (left/right descent operators).
+
+Valid wing expressions include +2, (a single wing primitive of the
+axis variety), <.> (two left/right descent operators chained with
+"."), "fred" (a single wing primitive, of the face variety), "^^fred"
+(a single wing primitive with two skip operators applied), and
+"+7.<.+.^^^jim.data" (a complex wing that includes an axis wing
+primitive, two descent wing primitives, two face primitives (one with
+three skip operators).
+
+Valid rune function call expressions include
+
+	=+([a=10 b=20]  a)    :: tislus clone-and-modifies the subject, adding  hoon expression [a=10 b=20] to it
+			 	  		  :: then evaluates hoon expression 'a' in that subject
+
+	=+([a=10 b=20]  ?:( ?|(?@(a) ?@(b))  123 444))
+			 			  :: =+ ("tislus") takes two hoons as arguments
+						  :: it uses the first, [a=10 b=20], to create a subject
+						  :: in which it evaluates the second hoon expression ?:(...)
+						  :: the ?: ("wutcol") hoon expression has three arguments
+						  :: the first ?| ("wutbar") has two arguments...
+
+
+
+This is the regular Hoon syntax, but there are irregular bits of syntax we'll add later.
+
+Well, even that is a bit of a lie; one piece of the the syntax
+described above (the bit for for assigning a face, e.g. a=10 ) is in
+fact an irregular syntax that is a shortcut for the regular ^=
+("kettis") rune we learned in chapter 5.
+
+In addition to the formalization of Hoon's syntax, a second take away
+from this section is understanding that there is a clean simple
+"regular" Hoon syntax, and there are optional irregularities that make
+it quicker and easier to write Hoon.  We will add these irregular
+syntaxes bit by bit, later, and we will explicitly call out irregular
+syntax when it occurs.
+
+
+
+Hoon syntax, the first complication: wide vs tall form
+------------------------------------------------------
+
+So far all of the Hoon we've written has fit on one line.
+
+If a Hoon expression gets so large that it does not fit on one line, we need to split it across multiple lines.
+
+Oddly, any expression that is split across multiple lines has a distinct syntax enforced on it.
+
+The syntax we have used to date is called "wide form".  It has two characteristics worthy of note:
+
+* the whitespace separating any two sub expressions (e.g. the [1 2]
+and the [3 4] in [[1 2] [3 4]], or the ?@(a) and the ?@(b) in ?|(?@(a)
+?@(b)) ) must be exactly one space character wide.
+
+* we use parenthesis ("pal" and "par") to wrap the arguments to a rune
+
+When a Hoon expression is split across two or more lines, there are four changes:
+
+1) The whitespace separating any two sub expressions must now be exactly two space characters wide
+
+2) We use a "backstep" indentation style.
+
+In the Lisp programming language we indent every sub-expression of an
+expression after the first (the command name) by an equal amount.
+When one of those sub-expressions is itself non trivial, we indent it
+according to the same rules, and the indentation accumulates.
+
+An example:
+
+   (functionname			;; the function we're invoking
+		arg1				;; argument 1
+		arg2				;; argument 2
+		(functionname-2  	;; argument 3 - itself an invocation of a function on two arguments
+			arg2a
+			arg2b))
+
+
+In Hoon, we place the rune or functionname at the appropriate indent
+level, then move to a new line and indent the first argument to the
+rune by two spaces, and then move to a new line and index the second
+argument at the same level as the rune or functionname.
+
+An example:
+
+   rune1	;; the rune we're invoking
+     arg1	:: argument 1
+   arg2		:: argument 2
+   rune-2   :: argument 3 - itself an invocation of a rune on two arguments
+	 arg2a
+   arg2b
+
+I do not defend this; I merely report on it.
+
+
+3) We do not use parenthesis to wrap the arguments to a rune
+
+4) In the absense of parenthesis, the parser is presented with the
+problem of trying to figure out where the arguments to one function
+end and where the following function starts.
+
+Because most runes take a fixed number of arguments, it's easy for the
+parser to figure this out in most cases.
+
+To use some pseudocode,
+
+   (if_then_else  TRUE  (concat_two_items "a" "b") (concat_two_items "c" "d"))
+
+is pretty easy to parse the following parenthesis-free code
+
+   if_then_else	  		:: line 1
+     TRUE  	   	   	   	:: line 2
+   concat_two_items		:: line 3
+     "a"				:: line 4
+   "b"					:: line 5
+   concat_two_items		:: line 6
+     "c"				:: line 7
+   "d"					:: line 8
+
+We know that if_then_else takes exactly three arguments, we know that
+TRUE is the first of these, and we know that concat_two_items takes
+exactly two arguments, so when we get to line 6, we can be certain
+that "b" on the previous line completed the (concat_two_items "a" "b")
+expression, and we know that line 6 is the begining of a new
+sub-expression ... which, taken together, will provide the third argument to if_then_else.
+
+...but what if the psuedocode was instead
+
+   (if_then_else  TRUE  (concat "a" "b" "c") (concat "d" "e"))
+
+where the new "concat" function takes a variable number of arguments?
+
+If we express this in tall form
+
+   if_then_else	  		:: line 1
+     TRUE  	   	   	   	:: line 2
+   concat          		:: line 3
+     "a"		   		:: line 4
+   "b"			   		:: line 5
+   "c"			   		:: line 6
+   concat          		:: line 7
+     "d"				:: line 8
+   "e"					:: line 9
+
+The parser has an impossible job.
+
+This could be read as either
+
+   (if_then_else  TRUE  (concat "a" "b" "c") (concat "d" "e")) :: returns "abc"
+   
+or 
+
+   (if_then_else  TRUE  (concat "a" "b" "c" (concat "d")) "e") :: returns "abcd"
+
+And the parser has no data to help it decide between the two.
+
+Hoon has exactly this problem in tall form, so any Hoon rune that takes a
+variable number of arguments requires a terminator in tall form,
+either "--" ("hephep") or "==" ("tistis").
+
+
+Writing Hoon in files
+---------------------
+
+We're about to start writing hoon, specifically cores with arms
+(roughly analagous to "objects" with "methods" in other languages -
+but only roughly).
+
+We can do that at the dojo prompt, but it's easier to do it with your
+favorite editor.
+
+Urbit has its own concept of files, and in the glorious Urbit future
+perhaps you will boot a device that has a CPU that runs the Nock
+instruction set natively, and once it boots you will run Hemacs or Him
+or Hotepad and edit files inside the the urbit filesystem.
+
+...but today we live in the very very early days of this glorious new
+world, and Hemacs does not yet exist, and so we need to make
+allowances.
+
+The Urbit filesystem "clay" will, if you tell it to, shadow your unix
+filesystem, so that a file you create with your favorite editor will
+spring into existence inside the Urbit world, and changes you make
+will be reflected inside the urbit world.
+
+In dojo type
+
+    |mount %
+
+Now, any file in your unix directory
+
+	./<shipname>/home/gen
+
+will appear in the urbit FS.
+
+If you write a file
+
+	./<shipname>/home/gen/<filename>.hoon
+
+It can be invoked from the dojo prompt with
+
+   +<filename>
+
+E.g.
+
+	./<shipname>/home/gen/test.hoon
+
+can be invoked with
+
+	+test
+
+The word "gen" in the clay path is short for "generator".  The urbit docs describe them thusly:
+
+	https://urbit.org/docs/learn/arvo/arvo-internals/generators/
+
+	Generators are the most straightforward way to write programs for
+	Urbit. They are used for doing computations that do not require
+	persistence: they take an input and produce an output, then disappear.
+
+Generators come in a variety of types, and we're going to use the simplest one (the "say" type).
+
+Don't spend any time worrying about generators, or the other types of them, right now.
+
+Just realize that what we're doing is writing short programs and storing them in files.
+
+Something tricky and weird about dojo
+-------------------------------------
+
+This is a brief philosophical aside that attempts to explain how Urbit
+is simultaneously "stateless" (in theory) but "stateful" in practice.
+You may not care.  It's here largely because * I * felt an upsetting
+niggling annoyance at something in dojo: the way that I could
+apparently "set a variable", even though Urbit has no variables.
+
+If this section makes your head itch, skip it and move on.
+
+
+A function is a mathematical construct that deterministically maps
+from a domain (possible inputs) to a range (possible outputs), without
+side effects, ambiguity, hidden state, etc.
+
+Urbit is not an "operating system", but an "operating function".
+
+The naive meaning behind this is that if you take an urbit, and feed
+it some input, it generates some output...and does not change
+internally.
+
+There is some astounding power and de-complexification behind this
+concept, and we'll return to it later.
+
+But now, however, an immediate objection arises: a computer or an
+operating system that can't alter itself is incapable of doing all
+sorts of things that we really want an operating system to do.
+
+How to square the circle?
+
+The philosophical answer is that when we start with a new
+fresh-out-of-the-box urbit, it is identical to every other urbit.
+Let's call this urbit-0.
+
+We then feed it some initialization information to tell it which
+particular star, planet, or galaxy it is, and this information is
+processed.  Recall that
+
+	A function is a mathematical construct that deterministically maps
+	from a domain (possible inputs) to a range (possible outputs)
+
+When we feed urbit-0 some input, what output does it generate?
+
+The answer is that it generates a NEW URBIT, which we'll call, in this
+block, urbit-1.  The next piece of input that arrives at our running
+process does not get fed into urbit-0, which is gone now, but into the
+new urbit-1 ... that urbit-0 generated as output.
+
+What exactly does this mean?
+
+1) Recall that in our earlier explorations of Hoon, we played with the
+concept of clone-and-modify-subject.
+
+2) Recall that the one thing we do with the new inner
+cloned-and-modified-subject is ... do more computation in that
+context.
+
+In the last chapter, we did the following in dojo.
+
+    .  				 	:: line 1: show the entire subject
+
+	=+(^=(a 10) .)		:: line 2: clone-and-modify-the-subject to add a=10, then show the entire cloned subject
+
+    .  				 	:: lime 3: show the entire subject
+
+Do those steps again now.
+
+Note that the subject in dojo is the same in step 3 as it is in step
+1, the "pinning" of a=10 in the subject was temporary.
+
+Imagine that we had a magic debugger, and could set a breakpoint just
+before that "." in the inner hoon of line 2.  Perhaps, using this magic
+debugger, we could pause execution and fire up a new instance of dojo,
+and then poke around interactively in the subject.  We could look at
+the face 'a' and the value it points to, and do any other inspections
+we want.
+
+It turns out that urbit has something somewhat similar to this.
+
+There is a syntax that is not valid hoon, but works inside dojo only
+
+	  =<face> <value>
+
+Try this now
+
+	=a 10
+	.
+
+This command seems to modify the subject by pinning the number 10 and
+labeling it with face 'a'.
+
+Now try
+	=a
+	.
+
+We've modified the subject again, removing 'a'.
+
+Now try
+	=a 20
+	.
+
+We've modified the subject a third time.
+
+Modify the subject?!?!  The subject is immutable!  You can never modify the subject!
+
+What in heck is going on here?  Is Hoon a functional language, where
+all values are constants, or isn't it?
+
+The answer is that we are not truly modifying the subject.
+
+We have a (partially) magic debugger, and the syntax =a 10 is
+effectively shorthand for this mix of Hoon and pseudo-code:
+
+   =+(^=(a 10)   <RUN A NEW INSTANCE OF DOJO> )
+
+We are, effectively, running a new copy of dojo inside the temporary
+environment created by a call to =+ tislus, which is the
+clone-and-modify-the-subject-and-then-run-some-other-code command.
+
+In theory, once you're done with the world where 'a' is a face that
+has the value '10', you can issue a command to dojo saying "I've
+decided that we've reached the end of this computation / playing
+around / free-form jazz fusion session; please close the final
+parenthesis of the =+, throw away this temporary subject, and pop me
+back up to the "real world" with the old subject, where there is no
+a=10 nonsense.
+
+In practice, this dojo feature hasn't been written, so you can't do
+so.
+
+...but in theory, you can, and this is a theoretical aside.
+
+The take-away here, is that while dojo syntax makes it appear that you
+can mutate the immutable subject (and thus you've proven that 0=1, war
+is peace, freedom is slavery, and ignorance is strength, and all logic
+falls apart and the center can not hold), in truth the axioms remain
+inviolate, all things are immutable, and the world is calm and good
+and well ordered.
+
+For those who skipped the above section
+---------------------------------------
+
+From dojo you can set conveience "variables", or a sort, thusly
+
+	 =a 10	  :: create a "variable" a and give it the value 10
+	 a		  :: prove that this is true
+	 .		  :: show that 'a' is actually just a face on the value 10 in the subject (which got mutated somehow? what?)
+
+And you can set them to new values
+
+	=a 20
+	a
+
+or unset them
+
+   =a
+
+You can NOT do this in arbitrary Hoon code.  This is a dojo-only hack.
+
+I've intentionally delayed talking about this because I wanted you to
+focus (a lot! ...and hard!) on the fact that Hoon doesn't have
+variables and you have to learn to program without using them.  Don't
+let the dojo-only hack confuse you on this general rule.
+
+If you ever want to know how it is that we can set "variables" (we
+can't, really) in a language that has no variables, read the preceding
+section.  Or follow the principle of rational ignorance, and don't.
+That's fine.
+
+
+BUGS
+----
+* make a reference to how saving a file results in verbosity in dojo
+*  wide space is not exactly 2 spaces, it's any whitespace which is not exactly one space character (i.e. 2 or more spaces, newline, or any combination thereof)
+*  is the example on line 204 correct?  The dojo does not like it.  I think the ?@ rune needs 3 sub-expressions, so I changed them to ?@(a & |) and ?@(b & |)

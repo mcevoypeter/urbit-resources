@@ -1,0 +1,259 @@
+3: Functional Programming
+-------------------------
+
+
+You are most likely used to a language like C, Ruby, or Python where
+we have variables, and those variables can change value over time.
+E.g.
+
+	{
+		int a = 3;
+
+		a = 5;
+
+		if (true){
+		   a = 7;
+		} else {
+		   a = 9;
+		}
+
+   }
+
+The value of 'a' changes, and doesn't change in a simple-to-describe
+way.  Replace that conditional above with
+	  'if (time-expressed-as-seconds mod 20 == 12)'
+and it gets even harder to reason about.
+
+Imagine a programming paradigm where any given variable can only 
+be set once - and never reset.
+
+On the one hand, this seems like it would simplify things, and make it
+much easier to reason about them.
+
+...but on the other hand, it would make it almost impossible to do
+most of what you're used to doing in code.
+
+Let's take a simple loop expressed in pseudo-code:
+
+	  {
+		int ii = 0;
+		while (ii < 10 ){
+			  print alphabet[ii];
+			  ii ++;
+	    }
+	  }
+
+We expect this to print out
+
+    abcdefghi
+
+and it does.
+
+But if I challenge you to rewrite this so that the variable ii never
+gets modified...well, how in heck would you even approach that?
+
+
+If you've banged your head against the existing Hoon documentation,
+you've seen lots of references to recursion.  It explains what
+recursion is (kind of), it challenges you to write code in a
+recursive idiom...but it never explains why.
+
+Here's why.
+
+If we are dedicated to functional programming, then we can't alter
+variables, and if we can't alter variables, we can't iterate.
+
+...so what's left?
+
+We can RECURSE.
+
+So recursion becomes a super-important idiom.
+
+Let's rewrite the above code in the Hoon pseudo-code I've been using
+before, and try to do it with recursion.
+
+First off, note that I'm putting some code into the subject.
+
+I said earlier that in regular C / Ruby / whatever that there is a
+big amorphous cloud of _waves hands_ stuff out there, and this stuff
+includes libraries.
+
+And I also said earlier that the subject is a way to organize all of
+this stuff.
+
+So now we're going to start using it that way!
+
+
+  subject = { alphabet = "abcdefghijklmnopqrstuvwxyz";
+  		  	  ii = 0;
+              my_function = function {
+			  			  		print alphabet[ii];
+								if (ii == 10){
+								   return;
+								} else {
+								   my_subject = clone_subject_and_replace_x_with_y(ii, ii + 1);
+								   with_subject_execute_code(my_subject, my_function);
+								   return;
+								 }
+  }
+
+  code = {  
+  	   my_function();
+   }
+
+  :: fire !
+  with_subject_execute_code(subject, code)
+
+Let's walk through this, and take it very slowly.  There's some major conceptual craziness going on here.
+
+So, first, we define the subject, and it holds two things:
+	* a number (we're not going to say 'variable')  named ii, which has value 0.
+	* a function named my_function().  Functions are just data, right?  So why can't the subject hold one?
+
+Let's skip over the exact implementation of my_function for now, and keep reading.
+
+Second, after the subject, we have some code.  This is the code that we're going to start out executing.  Unlike the previus examples:
+
+    * It's a single line of code
+	* it's just a call into a function defined elsewhere (in the subject)
+
+
+Third, after the code, we have the triggering event, which starts the whole ball rolling.
+
+We've seen this pattern before; it was the whole point of the chapter 2_subject.txt.
+
+As a refresher, the pattern is "with the state specified in <subject>, execute the code in <code>".
+
+OK, let's start stepping through.
+
+First we have
+
+	    with_subject_execute_code(subject, code)
+
+This does exactly what's on the label: we use all the data in 'subject' to set our environment, and then we execute the code in 'code'.
+
+The data in subject sets ii=0, and builds a very minimal library for us, consisting of just one function named my_function().
+
+We jump into the code, which is trivial - it calls the one library function my_function(), and that library function is defined in the subject, so we're golden.
+
+OK, let's step into my_function().
+
+The first line prints out the ii-th letter of alphabet, and both 'ii'
+and 'alphabet' are defined in the subject, so that's easy: we print
+out 'a'.
+
+Next, we check ii against 10.  ii is 0, so we take the second branch
+of the if statement.
+
+But now...now the trickiness starts!
+
+Remember how I said that subjects are just binary trees, and we can
+create and modify them, and that they are, in general, first class
+objects?
+
+Well, now we're doing it.
+
+First, we create a new subject.  We could do it from scratch (you
+remember that Hoon tree syntax from earlier, like [ [1 2] [3 12]] ?
+That's how you build trees!), but in this case, we've got a perfectly
+good subject sitting around, and we want one just like it...but just a
+bit different.
+
+So, using the pseudo code, we do this:
+
+    my_subject = clone_subject_and_replace_x_with_y(ii, ii + 1);
+
+subject has the value
+
+  subject = { alphabet = "abcdefghijklmnopqrstuvwxyz";
+  		  	  ii = 0;
+              my_function = function { ... } }
+
+and my_subject has the value
+
+  my_subject = { alphabet = "abcdefghijklmnopqrstuvwxyz";
+  		  	  ii = 1;
+              my_function = function { ... } }
+
+Simple enough, I hope you'll agree?
+
+OK, what do we do with 'subjects'?  That's right, their raison d' etre
+is to provide a computational environment for computation.  So, in the
+very next line we have
+
+    with_subject_execute_code(my_subject, my_function)
+
+This code is familiar.  This is how we kicked off the entire
+computation at the top level. ...except at the top level, (a) we used the
+original subject, and now we're using our own cloned-with-modification
+subject, which is almost identical, but has a different value of ii
+inside it, and (b) instead of calling into a wrapper named 'code',
+we're calling right into my_function.
+
+Let's step through what happens next.
+
+We look into the CURRENT subject (the one where ii == 0) and find the
+value of my_function.
+
+We call my_function()...and supply it the newly created my_subject (the
+one where ii == 1).
+
+Inside my_function we look up the constant 'alphabet', and we look up
+the constant 'ii' (which is 1).
+
+We print out the letter 'b'.
+
+We check ii vs 10, find that it's not there yet, and go down the
+second branch.  We clone the CURRENT subject (the one where ii == 1),
+and modify-on-clone to create a THIRD subject where ii == 2.  Then we
+call
+
+	with_subject_execute_code()
+
+again.
+
+We've walked through one and a half steps, but feel free to execute a
+few more in your head, and convince yourself that a new letter of the
+alphabet gets printed out each time, and ii keeps getting a higher and
+higher value.
+
+Nothing changes until the 10th invocation, when ii is now 10
+
+At this point, instead of recursing one more time, we've reached a
+termination condition, and we just return.
+
+...then we pop up into a world that looks identical, except in this
+world ii has value 9...and we again pop up a level.
+
+We keep popping up levels until ii=0, and then we're done.
+
+What we've just done was EFFECTIVELY iteration.  It was identical in
+effect to the original code
+
+		while (ii < 10 ){
+			  print alphabet[ii];
+			  ii ++;
+	    }
+
+except it was IMPLEMENTED as recursion (and it was also implemented in
+a strange way where we clone-and-change the subject at each step).
+
+If we squint a bit, we'll notice that it even looks a heck of a lot
+like iteration, because every time we lean in and look, ii has a
+higher value than it did just a moment before ... and when ii hits the
+upper limit, everything stops.
+
+A key take-away here, though, is that iteration and recursion are
+functionally equivalent, and any time you think "I want to iterate
+over X",  you should recast that as "I want to recurse over X".
+
+Important lessons that should have been learned in this chapter:
+
+* we have the ability to clone-and-modify subjects
+* clone-and-modify is an absolutely key concept in Hoon, and EVERYTHING centers around it
+* functional programming means that we can't iterate, but must recurse
+* the way we recurse is usually clone-and-modify  the subject
+* this looks really weird, but it's all OK, because recursion is basically EXACTLY the same
+     thing as ITERATION.  ii keeps getting bigger, we keep printing
+     out successive characters from the alphabet ... it's funny
+     looking, but it's actually not alarming.

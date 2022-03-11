@@ -1,0 +1,700 @@
+Experiments in the dojo
+-----------------------
+
+OK, this chapter is a big leap, and an exciting one!
+
+We're going to fire up the interpretter and do a few things:
+
+1) really get comfortable with the concept of "the subject"
+
+2) invoke our first built in Hoon functions
+
+3) play around with the three modes of data lookup in trees we talked
+  about earlier
+
+
+First, a quick refresher about subjects:
+
+* I said earlier that in Hoon all computation takes place in the context
+of a "subject".
+
+* A "subject" is the entire bundle of information that our computation
+has access to: all the stuff that in other languages is spread across
+local variables, global variables, library functions, Windows
+registries, data bases, etc.
+
+
+Viewing the subject
+-------------------
+
+Start urbit and verify that the prompt says "dojo".  If it does not,
+hit C-x.
+
+All Hoon computation takes place in the context of a subject.  That
+means that right now, at the command prompt, there is a subject.
+Let's look at it.
+
+Remember, there are three ways we can navigate a tree.  The first is
+to specify the numeric axis (location).  The syntax to specify an axis
+is "+n", for any integer n.
+
+Recall that the root of the tree is axis 1.
+
+To view the sub tree that is rooted at location 1 (i.e. the
+entire tree) type
+
+	   +1
+
+The result is something like
+
+	[ [our=~zod now=~2019.2.16..21.18.02..03fe eny=0v3bc.q29ms.sql3p.vchr4.nsaql.lat9b.7oqf2.p6uvi.2s2ps.go1e4.ohsn7.1fh7n.iagv7.el08k.24ftv.k19sn.s4ss2.fhtgt.c4oqb.evbb6.71det]
+	  <21.qup 23.psn 7.osi 36.kof 96.kse 247.awr 51.ftt 90.bkx 75.pvl 1.ane $141>
+	]
+
+
+What exactly does this mean?
+
+Let's shorten it a bit:
+
+	[ [our=~zod now=~2019.2.16..21.18.02..03fe eny=... ] <21.qup ...>	]
+
+OK, this is standard tree syntax.
+
+The outter square brackets are the entire tree.  The first item inside
+them is the left child tree, and the second item is the right child
+tree.
+
+Looking at the left child tree first we see three distinct items.
+That's odd.  Aren't all trees binary in Hoon?
+
+Yes, they are.  But, recall, Hoon has a compact / lazy way of
+expressing right-descending trees.  Let me quote from essay #1:
+
+		A very common use of trees in Hoon is a very very unbalanced
+		right-heavy tree, like this:
+
+					  .
+					/   \
+				   3     .
+						 / \
+						1    .
+							/ \
+						   5   .
+							  / \
+							 22  99
+
+
+		All linear structures are implimented in trees this way.  Where you
+		would use an array in C or Ruby, you'll use a tree in this manner in
+		Hoon.  You should simultaneously think of such a usage as "a list",
+		but also remember the underlying implementation.
+
+		This is expressed on one line as
+
+			 [ 3 [1 [5 [22 99]]]]
+
+		Because this is a very common usage model, though, there is an
+		alternate expression syntax:
+
+			  [3 1 5 22 99]
+
+		Your brain is going to look at this and think "that's a tree with a
+		single root cell, and it has five children cells".  Yes, that's what the
+		syntax seems to imply.
+
+		No, that's not what it means.
+
+		I know that this is kind of painful, but you have to accept that the
+		above syntax means the diagram above, NOT a root with five children.
+
+
+So getting back to our subject
+
+	[ [our=~zod now=~2019.2.16..21.18.02..03fe eny=... ] <21.qup ...> ]
+
+Let's investigate the left subtree (we'll ignore the right subtree for
+now).
+
+The left subtree is this part of the previous expression.
+
+   [our=~zod now=~2019.2.16..21.18.02..03fe eny=... ]
+
+I assert that the  left subtree is something like this:
+
+  		 	  	          /
+	 	   		   	    .
+					 /     \
+				 our=~zod   .
+    					   /   \
+					   now=...  eny=...
+
+I'm going to ask you to verify this.
+
+But first, a quick reminder of three things we've already covered:
+
+1) the labels like "our", "now", and "eny" are called "faces" in Hoon
+terminology.
+
+2) they're not really tags or attributes in the tree, but are being
+maintained elsewhere, by the interpretter, for our benefit.
+
+3) every atom in a leaf node of a tree is an integer.  The pretty
+printer has chosen to print out one bigint as the string "~zod", one
+as "~2019.2.16..21.18.02..03fe", and one as "Ov2mb..." for reasons of
+its own.  We'll get to those reasons later, but for now ignore it.
+
+OK, with that in mind, time for you to verify what I've said above.
+
+* type +1 and hit return to view the whole tree.
+
+Expect:
+
+	[ [our=~zod now=~2019.2.16..21.18.02..03fe eny=... ] <21.qup ...> ]
+
+* recall that the left child of node n has ID 2 * n, so type +2 to view
+  the left sub tree.
+
+Expect:
+
+	 [our=~zod now=~2019.2.16..21.18.02..03fe eny=... ]
+
+If my tree diagram  above is correct, then we expect "our=~zod" to the
+be the left child.  Again, the left child has the axis 2 n of the
+parent, so type +4 to view the left child.
+
+Expect:
+
+	our=~zod
+
+By the way, note that the relative base of the tree is not changing.
+We're starting with the exact same subject each time.  We're not
+"moving our location" in the subject or anything like that.
+
+OK, let's look back a level:
+
+	+2
+
+	 [our=~zod now=~2019.2.16..21.18.02..03fe eny=... ]
+
+and then descen to the right.  Right children have an axis 2n + 1 of
+the parent, so type
+
+	+5
+
+and expect
+
+	[ now=~2019.2.16..21.18.02..03fe eny=... ]
+
+the left child of this has axis 2n, so
+
+	+10
+
+yields
+
+	now=~2019.2.16..21.18.02..03fe
+
+and right child has axis 2n+1, so
+
+    +11
+
+yields
+
+	eny=...
+
+The right subtree can be inspected with +3.  This is displayed as
+
+    <21.qup 23.psn 7.osi 36.kof 96.kse 247.awr 51.ftt 90.bkx 75.pvl 1.ane $141>
+
+This is how the pretty printer shows functions.  What you're looking
+at is the complete Hoon library!  Every function that you'll call is
+down in there - and not just a reference to the function, but the
+actual function definition / implementation !  Down beneath axis 3 is
+basically the Hoon equivalent of the unix /usr/lib, or the emacs lisp
+files /usr/share/emacs/lisp.
+
+Some reminders
+--------------
+
+
+I want to reemphasize a few things, because they're so weird that it's
+easy hear but not REALLY hear:
+
+1) the ENTIRE data environment that your code is able to touch is
+contained in the subject.
+
+1b) corrolary: anything that is not in the subject might as well not
+exist, because your code can't see it.
+
+2) this includes all of the standard library functions
+
+3) no, I don't mean that _references_ to them are in the subject.  The
+functions themselves - the code that implements them - is in the
+subject.
+
+4) using standard Hoon expressions, you can inspect, clone, and
+otherwise play with the subject.
+
+Our first clone-and-modify of the subject
+-----------------------------------------
+
+OK, let's actually DO something in the dojo - let's modify a tree!
+
+...but wait a second - Hoon is functional.  We can't MODIFY anything,
+right?
+
+Right.  What we can do is clone-with-modifications - we never touch
+the original, but we make something new that's similar-but-slightly
+different.
+
+So, let's clone the subject, and modify it by adding an integer to
+it...and let's give that integer a face (i.e. a label).
+
+We'll use the function (Hoon calls functions "gates", and I'll explain
+why later) denoted to by the rune =+ , also known as
+"tislus" (I'll explain the pronunciation thing later too).
+
+Functions (or gates) in Hoon are invoked in a syntax pretty similar to
+most other languages: the function name, an open parent, the
+arguments, and a close parent.
+
+Let's invoke tislus with two arguments.  The first argument is a new
+integer we want to put into the cloned-subject.  The second argument
+is the code that we want to run in that newly created subject.
+
+Before proceeding, you might want to revisit essay 3 on functional
+programming.  Re-read the whole thing...or, at the very least, make
+sure that you remember this bit of psuedocode:
+
+
+	 	  :: take the existing subject and change one thing in it
+		  ::
+		  my_subject = clone_subject_and_replace_x_with_y(ii, ii + 1);
+
+		  :: with that new subject, run the code my_function
+		  ::
+		  with_subject_execute_code(my_subject, my_function);
+
+We are about to do these two steps, in actual real Hoon, not
+pseudo-code Hoon.
+
+First, remind yourself of the current subject.  Type
+
+	   +1
+
+and view the subject.
+
+	[ [our=~zod now=~2019.2.16..21.58.31..9b6c eny=0v2u2...]
+	  <21.qup... >
+	]
+
+Take a moment and draw the tree.
+
+It should look like this:
+                            .
+  		 	  	          /   \
+	 	   		   	    .      <21.qup ...>
+					 /     \
+				 our=~zod   .
+    					   /   \
+					   now=...  eny=...
+
+
+
+Now invoke tislus.  The first argument is the new value we want to
+stick into the cloned-with-modifications subject, the second argument is the code that we
+want to evaluate in that cloned-with-modifications subject.
+
+For the new value, let's choose
+
+	10
+
+For the code we want to evaluate, let's choose
+
+	+1
+
+Yes, that's right - the entire program that we're going to run is
+"show me the subject".  We could put much more sophisticated code in
+there, but let's start very simple.
+
+So, type
+
+	=+(10 +1)
+
+What do you see?
+
+Something like this:
+
+	[ 10
+	  [our=~zod now=~2019.2.16..21.58.31..9b6c eny=0v2u2...]
+	  <21.qup... >
+	]
+
+Take a moment and draw the tree.
+
+It should look like this:
+
+   		                 .
+   		  	   		   /   \
+                     10      .
+  		 	  	          /   \
+	 	   		   	    .      <21.qup ...>
+					 /     \
+				 our=~zod   .
+    					   /   \
+					   now=...  eny=...
+
+
+Basically, tislus cloned the entire existing subject, but pushed it
+down to axis 3, put the new value we specified in axis 2, and made a
+new root out of those two trees.
+
+Tislus is sometimes said to "pin" a value.
+
+If you want to verify that the value 10 is really at the location I
+claim, do this
+
+	=+(10 +2)
+
+which does the clone-with-modify-then-run-some-code-in-that-subject
+trick again, but this time inspects axis 2.
+
+Expect
+
+	10
+
+Now, I keep harping on the fact that data can never be overwritten.
+
+Let's verify this.  Inspect the subject again
+
+	  +1
+
+expect to not see any reference to 10.  That's because the
+cloned-with-modifications subject only existed for the brief duration
+of the tislus call.  Now that the tislus call is done, we're back up
+to our "real" top-level subject, which is immutable.
+
+Adding faces ("kettis")
+-----------------------
+
+Let's get a bit more complicated with our use of tislus.
+
+First, instead of merely pushing an integer into our new subject,
+let's give that integer a face (i.e. a human readable label).
+
+The way to apply a face is with the ^= ("kettis") function.
+
+Kettis takes two arguments: a human readable string that will become
+the face, and a noun.
+
+Let's try
+
+	  ^=(a 10)
+
+The result is
+
+	a=10
+
+Note that this is a return value.  It did not modify the existing
+subject (which is impossible, because you can never modify the
+subject!), nor did it create a new subject and run some computation in
+that new subject.  All it did was create a return value.  ^= is pretty
+useless on its own ... unless we feed its return value into something
+else.
+
+Let's combine ^= and =+ thusly
+
+	=+(^=(a 10) +1)
+
+By the way, I recommend that when you read a line of code, you
+pronounce it silently to yourself.  I read the above line of code as
+"tislus of (ketlus of a 0) axis 1".  Doing so will help burn the
+mnemonics into your head.
+
+Anyway, type that line of code and expect
+
+	[ a=10
+	  [our=~zod now=~2019.2.16..21.58.31..9b6c eny=0v2u2...]
+	  <21.qup... >
+	]
+
+Let's do a more complicated example.
+
+We can run any arbitrary hoon code we want inside the temporary
+cloned-with-modifications subject, right?
+
+Nesting clone-and-modify inside of clone-and-modify
+---------------------------------------------------
+
+Let's get meta and clone-with-modify the subject inside the
+cloned-with-modified subject.
+
+    =+(^=(a 10) =+(^=(b 20) +1))
+
+expect
+
+	[ b=20
+	  a=10
+	  [our=~zod now=~2019.2.16..21.58.31..9b6c eny=0v2u2...]
+	  <21.qup... >
+	]
+
+Draw a picture of this.  It should look something like this:
+
+	   		   	      .
+                    /   \
+   		        b=20     .
+   		  	   		   /   \
+                    a=10      .
+  		 	  	          /   \
+	 	   		   	    .      <21.qup ...>
+					 /     \
+				 our=~zod   .
+    					   /   \
+					   now=...  eny=...
+
+
+Why is a=10 pushed down a level?  Alternately, why is b=20 higher up
+in the tree?  Let's think it through.  The first thing we do is
+calculate
+	^=(a 10)
+which yields
+	a=10
+
+then tislus constructs a cloned subject with that a=10 pinned in
+axis 2 ... and invokes the code, which constructs b=20, and pins that
+atop / to the left of the the previous subject.
+
+Let's go one more level
+
+    =+(^=(a 10) =+(^=(b 20) =+(^=(c 30) +1)))
+
+Look at the result.  Does it make sense?
+
+Draw a picture of it.  Does it make sense?
+
+
+Pinning complex records
+-----------------------
+
+Let's complicate things some more.  Instead of adding a single integer
+to the cloned subject, let's add a small subtree.
+
+
+    =+(^=(record [^=(feet 5) ^=(inches 10)]) +1)))
+
+Do this in the dojo.
+
+Let's add a slightly larger subtree.  We're going to add
+
+  record=[pounds=205 feet=5 inches=10]
+
+Recall that Hoon syntax optimizes for the right-descending tree,
+because this is a common / supported / expected coding style, and that
+this subtree looks like
+
+              .
+            /   \
+  pounds=205      .
+                 / \
+          feet=5   inches=11
+
+ok, let's do it.  We're about to type this
+
+    =+(^=(record [^=(feet 5) ^=(inches 10)]) +1)))
+
+...and already we've got a problem.  This syntax is verbose, and it's
+a little hard to read.  
+
+We can use an alternate infix notation, where
+
+   face=value
+
+replaces ^=(face value)
+
+thus we can generate
+
+	 record=[pounds=205 feet=5 inches=10]
+
+using that as the actual syntax, instead of the more autistic
+
+	  ^=(record [^=(feet 5) ^=(inches 10)])
+
+So at the prompt we type 
+
+    =+(record=[pounds=205 feet=5 inches=10] +1)))
+
+...but dojo has some quirks and doesn't like this.
+
+Dojo will accept
+
+    =+([pounds=205 feet=5 inches=10] +1)))
+
+but
+
+    =+(record=[pounds=205 feet=5 inches=10] +1)))
+
+is a problem.  Apparently applying a face to the entirety of a tree
+makes dojo sad.
+
+...so let's mix and match syntaxes for applying faces.
+
+    =+(^=(record [pounds=205 feet=5 inches=10])   +1)))
+
+Ahh, that works.
+
+Before we hit the return key, let's take a moment to make sure we know
+what we're doing.
+
+   * the =+ ("tislus") says "clone-the-subject, pin something new at the
+     top, then evaluate some code in the context of that new subject".
+
+   * the first argument to tislus is the "something new" that we're
+     going to pin in the cloned subject.  Specifically it's a call to
+     ^= (kettis), which assigns a face ("record") to the small tree
+     [pounds=205 feet=5 inches=10]
+
+   * the second argument to tislus is the code we want to evaluate in
+     the context of the cloned subject, and it's +1, meaning "
+     axis 1 of the subject ... i.e. the entire subject".
+
+The results look right...but are they?
+
+Inspecting trees
+----------------
+
+Let's inspect the cloned subject...and exercise our skills in
+inspecting trees.
+
+We remember from an earlier essay there are three ways to search in
+trees:
+* by axis
+* by face
+* by descent path from root
+
+Inspecting trees: by axis
+-------------------------
+
+
+Let's play with axises first.  We've already done a lot of this above,
+so we'll be brief.
+
+Instead of executing the code +1 (show the whole tree, rooted in axis
+1), let's use +2 to retrieve the data record we just added
+
+	=+(^=(record [pounds=205 feet=5 inches=10])   +2)))
+
+Let's look at smaller pieces of it
+
+	=+(^=(record [pounds=205 feet=5 inches=10])   +3)))  :: left child
+
+	=+(^=(record [pounds=205 feet=5 inches=10])   +4)))  :: right child
+
+
+Inspecting trees: by face
+-------------------------
+
+Now, since we did so much work with ^= ("ketlus"), including learning
+both the prefix ^=(face value) syntax, and the infix face=value
+syntax, let's make use of that and search for data by face.
+
+Try
+
+	=+(^=(record [pounds=205 feet=5 inches=10])   record)))
+
+and get
+
+	[pounds=205 feet=5 inches=10]
+
+OK, makes sense.  It's interesting to see that the faces inside the
+result are delivered to us, but the result as a whole doesn't have a
+face.  Noted!
+
+Let's look for the face "feet".  This 
+
+	=+(^=(record [pounds=205 feet=5 inches=10])   feet)))
+
+fails.  The reason why is that the face lookup rules want to see a
+fully qualified face path.  I.e. "feet" is bad, but "feet.record"
+is good.  Note that wing search paths read from right to left, much
+like URLs (where "kdp" is inside of "amazon", and "amazon" is inside
+of "com").
+
+Why does Hoon require fully qualified faces?  Because the subject is
+likely to be VAST.  Remember, EVERYTHING is stored in there - every
+database record, every registry key, every file ever downloaded, every
+installed library, and more.  Not only is asking for a face named
+"round" likely ambiguous in a large subject, it might also be
+computationally expensive to find!
+
+So, anyway, we try again with a fully qualified face
+
+	=+(^=(record [pounds=205 feet=5 inches=10])   feet.record)))
+
+and of course
+
+	=+(^=(record [pounds=205 feet=5 inches=10])   pounds.record)))
+
+and
+
+	=+(^=(record [pounds=205 feet=5 inches=10])   inches.record)))
+
+
+Inspecting trees: by descent path
+---------------------------------
+
+Let's retrieve the data record another way, using a tree search path
+to go to the left child of root
+
+	=+(^=(record [pounds=205 feet=5 inches=10])   -)))
+
+Let's retrieve the data record another way, using a tree search path
+(called "wing path" in Hoon terms) to go to the left child of root,
+and then to the left child of that we use "-.-".  Note: as above,
+search paths read from right to left.
+
+	=+(^=(record [pounds=205 feet=5 inches=10])   -.-)))
+
+and
+
+	=+(^=(record [pounds=205 feet=5 inches=10])   +.-)))
+
+and
+
+	=+(^=(record [pounds=205 feet=5 inches=10])   +.+.-)))
+
+
+
+
+
+
+
+
+TJI TO DO
+----------
+
+XXX add =/ pin with name  ?
+
+XXX add caution to not use +n syntax to inspect wing 3 of the subject
+(e.g. +6) because overflow kills pretty printer
+
+
+DavidKMagnus [4:45 PM]
+Thanks so much for writing these essays, they are great!
+Not sure if you are looking for these types of comments so if you already have a process for correcting minor typos I'll refrain in the future.
+
+Lines 405-411 of essay 5:
+`=+(^=(a 10) +1)`
+```By the way, I recommend that when you read a line of code, you
+pronounce it silently to yourself.  I read the above line of code as
+"tislus of (ketlus of a 0) axis 1".  Doing so will help burn the
+mnemonics into your head.```
+
+I think it should read `tislus of (kettis of a 10) axis 1` (edited) 
+
+DavidKMagnus [5:13 PM]
+
+In and around 520ish of the same essay, I'm wondering if the
+interpreter has been updated since you wrote it.
+
+`=+(record=[pounds=205 feet=5 inches=10] +1)))` is actually accepted
+by the dojo, you don't need to mix and match syntax anymore

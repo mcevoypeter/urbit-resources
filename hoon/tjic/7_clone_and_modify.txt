@@ -1,0 +1,261 @@
+7: Clone and modify
+---------------------
+
+
+We've talked many times about how clone-and-modify is a core concept
+of Hoon.
+
+We're going to use clone-and-modify a lot in the next chapter, which covers
+cores ("objects" ...sort of) and gates ("functions" ... sort of), so
+let's practice with them a little bit.
+
+So far the only way we've modified the subject is by using =+ (tislus)
+to take the current subject (a tree), push the whole thing down and to
+the right, and make a new tree from that plus a new value, which we
+turn into a sibling of the old tree.
+
+Let's practice with tislus again.  Type the following at the dojo
+prompt (while you can type the "::" comment delimeter and the comments
+that follow after, there's really no need to).
+
+	  .  :: show the entire subject
+
+     +1  :: another way to show the entire subject
+
+	 +2  :: the left child, which has some data
+
+	 +3  :: the right child, which has a complete arvo (our operating system) core
+
+
+In short, this is our subject right now:
+
+            1        <the entire subject>
+	    /        \
+  	   /          \
+   2 <some data>     3  <the arvo operating system>
+
+
+
+We want to use tislus to push down the entire subject to +3 and put a
+value a=10 at axis 2.
+
+           1             <the new subject we're creating>
+       /         \
+ 2  a=10          3        <the entire old subject>
+              /        \                             
+             /          \                            
+         6 <some data>     7  <the arvo operating system>
+
+
+
+We can do it with
+
+   =+(a=10   ???)
+
+but what should we put where the ??? is?
+
+The general answer is "whatever code we want to run with that newly
+created subject".
+
+So why not inspect the newly pushed a=10 ?
+
+   =+(a=10   +2)
+
+That looks right.
+
+Let's inspect the old subject that we pushed down a level
+
+   =+(a=10   +3)
+
+That also looks right.
+
+Let's try applying =+ multiple times.
+
+   =+(b=5  =+(a=10  +2))
+
+Working from the outside in, first =+ pushes down the subject and adds
+b=5 as a sibling
+
+           1             <the new subject (subject B) >
+       /         \
+ 2  b=5          3        <the entire old subject (subject A)>
+              /        \                             
+             /          \                            
+         6 <some data>     7  <the arvo operating system>
+
+
+and then, with that as the subject, evaluates  =+(a=10  +2), which
+creates a new subject by pushing all of that down and putting a=10 on
+the left
+
+		   1                 <the new NEW subject (subject C) >
+		/      \
+  2	a=10        3             <the new subject (subject B) >
+		   /         \
+	 6  b=5          7        <the entire old subject (subject A)>
+				  /        \                             
+				 /          \                            
+			 14 <some data>     15  <the arvo operating system>
+
+
+
+and then with that as the subject, evaluates +2, yielding
+
+	a=10
+
+as a result.
+
+Try it again with a +6 to find the b=5
+
+   =+(b=5 =+(a=10  +6))
+
+Let's try a variant.  Instead of pinning first b=5 and then a=10,
+let's pin 'a' twice.
+
+
+   =+(a=5 =+(a=10  ??? ))
+
+We expect
+
+		   1                 
+		/      \
+  2	a=10        3             
+		   /         \
+	 6  a=5          7        
+				  /        \                             
+				 /          \                            
+			 14 <some data>     15  <the arvo operating system>
+
+
+What code shall we run in here?
+
+We can try +2 and +6 again (go ahead, try it), but it might be more
+interesting to use one of the other three approaches to finding items
+in a tree (recall, the three methods are (a) +n axis notation, (b)
+faces, (c) left/right descent operators).
+
+Let's try using the face 'a'
+
+   =+(a=5 =+(a=10 a))
+
+We get
+
+   10
+
+because when Hoon searchs for faces, it does a depth-first search,
+looking at heads (left children ) before tails (right children), and
+the search terminates as soon as a hit is found.
+
+Let's go one level deeper:
+
+   =+(a=5 =+(a=10 =+(a=15 a)))
+
+We get
+
+   15
+
+Of course, we could achieve the same result in a different way:
+instead of looking for the 'a' face in the inner code block, we could
+use the inner code block to return the entire inner subject, and THEN
+look for the 'a' face in that at the top level.
+
+Let's use a new rune, => ("tisgar").
+
+Tisgar takes two arguments.  The left argument is evaluated, and it
+returns some tree.  It could be [1 2], it could be [a=10 [b=22 c=99]],
+or it could be a whole massive tree that includes a copy of the entire
+arvo operating system.
+
+The right argument is evaluated using the return value of the left
+argument as its subject.
+
+Try
+	=>([a=10 b=5] a)
+
+We get 10, of course.
+
+Try
+	=>([a=10 b=5] .)
+
+We get [a=10 b=5].  This makes sense, but pause for a moment and
+realize that in all of the previous examples using =+, we making a new
+subject by cloning the existing subject, adding something to it, and
+then running code in that context, but with tisgar we aren't cloning
+the existing subject, we're making a new one.
+
+At the dojo command line try
+
+   .     :: get the entire subject
+   our   :: find the face 'our' in the current subject
+
+Now with tisgar try 
+
+	=>([a=10 b=5] .)  :: get the entire subject as seen from inside
+			 	  	  :: the inner code block
+
+	=>([a=10 b=5] our) :: find the face 'our' in the subject as seen
+			 	  	   :: from the inner code block.
+
+Because we created a tiny little subject ab inition, without cloning,
+faces that are defined in the default dojo subject are not present.
+
+Of course, we COULD feed the current subject into tisgar
+
+	=>(. our)
+
+The left expression is trivial.  "Take the current subject, and return
+it."
+
+Tisgar then says "with the subject calculated thusly, look up the face
+'our'".
+
+So now that we have a handle on tisgar, let's look at
+
+   =+(a=5 =+(a=10 =+(a=15 a)))
+
+again.
+
+Instead of looking up 'a' in the inner-most expression, let's have the
+innermost expression pass the entire subject (as it appears at that
+level) all the way back out, and then use tisgar to evaluate 'a' in
+that subject:
+
+   =>(=+(a=5 =+(a=10 =+(a=15 .))) a)
+
+We've covered four concepts in this chapter:
+
+* using =+ ("tisgar") to create a new subject by pinning a value in position 2, which
+  implicitly means pushing down the entire old subject into position
+  3.
+
+* using "." to return the entire subject from inside a computation, as
+  the result
+
+* using => ("tisgal") to evaluate a computation in a subject created
+  by other means
+
+* when searching for a face that matches multiple hits in the subject, we
+  get the "top" one ... which means the one added by the inner-most
+  block of computation.
+
+If we put these four concepts together, we get a pattern, which is
+this:
+
+   One typical way to write Hoon is to take the current subject,
+   clone-and-modify it, and then in that new inner subject perform a
+   computation which, among other things, clone-and-modifies the inner
+   subject to get a new-new subject...and so forth and so on
+   .... until the absolute most inner computation returns the
+   multiply-cloned-and-modified subject all the way to the top level,
+   which then looks up a certain face in said subject, and gets the
+   most recently pushed instance of a face that occurs multiple times.
+
+That's quite a strange thing for someone coming from a procedural
+programming background, so read it again.
+
+Now, let's add a fifth concept, which we won't explore in depth for
+another chapter or two: recursion.
+
+If you take the pattern that I just mentioned, and add recursion to
+it, THAT is a truly fundamental Hoon pattern.
+

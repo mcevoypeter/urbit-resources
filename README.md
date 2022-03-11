@@ -1,6 +1,11 @@
 # Urbit Resources
 
-### Papers
+### [`hoon/`](hoon)
+The contents of [`hoon/tjic`](hoon/tjic) were written by Travis J.I. Corcoran. I
+stumbled across them thanks to [this
+tweet](https://twitter.com/MorlockP/status/1502367967476174859?ref_src=twsrc%5Etfw%7Ctwcamp%5Etweetembed%7Ctwterm%5E1502367967476174859%7Ctwgr%5E%7Ctwcon%5Es1_c10&ref_url=https%3A%2F%2Fpublish.twitter.com%2F%3Fquery%3Dhttps3A2F2Ftwitter.com2FMorlockP2Fstatus2F1502367967476174859widget%3DTweet).
+
+### [`papers/`](papers)
 
  Year | Title                                                                                                                    | Author
 ------|:-------------------------------------------------------------------------------------------------------------------------|:-----------------------
