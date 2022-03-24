@@ -17,6 +17,7 @@ tweet](https://twitter.com/MorlockP/status/1502367967476174859?ref_src=twsrc%5Et
  2014 | [In Search of an Understandable Consensus Algorithm (Extended Version)](papers/raft-extended-2014-ongaro-ousterhout.pdf) | Ongaro & Ousterhout
  2016 | [Sulong - Execution of LLVM-Based Languages on the JVM](papers/sulong-2016-rigger-et-al.pdf)                             | Rigger et al
  2016 | [Urbit: A Solid-State Interpreter](papers/urbit-2016-yarvin-et-al.pdf)                                                   | Yarvin et al
+ 2017 | [The Case for Writing a Kernel in Rust](papers/levy-et-al-2017-rust-kernel.pdf)                                          | Levy et al
  2018 | [Poster: Log Pruning in Distributed Event-sourced Systems](papers/poster-log-pruning-2018-erb-et-al.pdf)                 | Erb et al
  2020 | [DBOS: A Proposal for a Data-Centric Operating System](papers/dbos-proposal-2020-cafarella-et-al.pdf)                    | The DBOS Committee
  2021 | [DBOS: A DBMS-oriented Operating System](papers/dbos-2021-skiadopoulos-et-al.pdf)                                        | Skiadopoulos et al
