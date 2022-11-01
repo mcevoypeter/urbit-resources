@@ -31,4 +31,5 @@ tweet](https://twitter.com/MorlockP/status/1502367967476174859?ref_src=twsrc%5Et
  2018 | [Poster: Log Pruning in Distributed Event-sourced Systems](papers/poster-log-pruning-2018-erb-et-al.pdf)                 | Erb et al
  2020 | [DBOS: A Proposal for a Data-Centric Operating System](papers/dbos-proposal-2020-cafarella-et-al.pdf)                    | The DBOS Committee
  2021 | [DBOS: A DBMS-oriented Operating System](papers/dbos-2021-skiadopoulos-et-al.pdf)                                        | Skiadopoulos et al
+ 2021 | [Tail Modulo Cons](papers/tail-modulo-cons-2021-bour-et-al.pdf)                                                          | Bour et al
  2022 | [A Progress Report on DBOS: A Database-oriented Operating System](papers/dbos-progress-report-2022-li-et-al.pdf)         | Li et al
