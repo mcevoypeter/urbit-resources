@@ -15,6 +15,7 @@ tweet](https://twitter.com/MorlockP/status/1502367967476174859?ref_src=twsrc%5Et
  1991 | [The Design and Implementation of a Log-Structured File System](papers/lfs-1991-rosenblum-ousterhout.pdf)                | Rosenblum & Ousterhout
  1996 | [An On-the-fly Bytecode Compiler for Tcl](papers/tcl-bytecode-compiler-1996-lewis.pdf)                                   | Lewis
  1997 | [Recursive Make Considered Harmful](papers/recursive-make-1997-miller.pdf)                                               | Miller
+ 1998 | [Malloc(3) revisited](papers/phk-malloc-1998-kamp.pdf)                                                                   | Kamp
  2002 | [Fast Functional Lists, Hash-Lists, Deques, and Variable Length Arrays](papers/vlist-2002-bagwell.pdf)                   | Bagwell
  2005 | [The Implemenation of Lua 5.0](papers/lua-5-implementation-2005-ierusalimschy-et-al.pdf)                                 | Ierusalimschy et al
  2011 | [Kafka: a Distributed Messaging System for Log Processing](papers/kafka-2011-kreps-et-al.pdf)                            | Kreps et al
